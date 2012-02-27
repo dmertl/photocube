@@ -1,0 +1,34 @@
+<html>
+<head>
+	<title>Canvas3D tutorial #2: A Simple Scene</title>
+	<script type="application/javascript" src="../c3dl/c3dapi.js"></script>
+	<script type="application/javascript" src="app.js"></script>
+	<script type="text/javascript">
+		document.addEventListener("DOMContentLoaded", documentReady, false);
+		var rubiks_face;
+		//Add models
+		c3dl.addModel("models/cube/cube.dae");
+		c3dl.addMainCallBack(c3dlMainCallback, "cube");
+		function documentReady() {
+			document.getElementById('test_action_1').onclick = testAction1;
+		}
+		function testAction1(e) {
+			for(var i=0; i<3; i++) {
+				for(var j=0; j<3; j++) {
+					rubiks_face.setDiffuse(0, i, j, [1, 0, 0]);
+				}
+			}
+			rubiks_face.rotateSlice('top', Math.PI / 4);
+		}
+		function c3dlMainCallback(canvas) {
+			console.log(canvas);
+			rubiks_face = new RubiksFace(canvas);
+		}
+	</script>
+</head>
+<body>
+<a href="#" id="test_action_1">Action 1</a><br />
+<!-- Add a canvas element to the page. It is scripted by using its id -->
+<canvas id="cube" style="border: 2px solid blue;" width="500" height="500"></canvas>
+</body>
+</html>
