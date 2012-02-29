@@ -1,10 +1,17 @@
 function FaceCubeManager(canvas) {
 	this.canvas = canvas;
 	this.gl = null;
+	this.vertexPositionAttribute = null;
+	this.perspectiveMatrix = null;
+	this.shaderProgram = null;
+	this.test_square = null;
 	//Init web GL context
 	if(this.initWebGL()) {
 		this.initCanvas();
 		this.initShaders();
+
+		this.test_square = new TestSquare(this.gl);
+		this.drawScene();
 	}
 }
 FaceCubeManager.prototype.initWebGL = function() {
@@ -31,18 +38,21 @@ FaceCubeManager.prototype.initShaders = function() {
 	var fragmentShader = this.getShader('shader-fs');
 	var vertexShader = this.getShader('shader-vs');
 
-	var shaderProgram = this.gl.createProgram();
-	this.gl.attachShader(shaderProgram, vertexShader);
-	this.gl.attachShader(shaderProgram, fragmentShader);
-	this.gl.linkProgram(shaderProgram);
+	this.shaderProgram = this.gl.createProgram();
+	this.gl.attachShader(this.shaderProgram, vertexShader);
+	this.gl.attachShader(this.shaderProgram, fragmentShader);
+	this.gl.linkProgram(this.shaderProgram);
 
-	if(!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) {
+	if(!this.gl.getProgramParameter(this.shaderProgram, this.gl.LINK_STATUS)) {
 		alert('Unable to initialize the shader program');
 	}
-	this.gl.useProgram(shaderProgram);
+	this.gl.useProgram(this.shaderProgram);
+
+	this.vertexPositionAttribute = this.gl.getAttribLocation(this.shaderProgram, "aVertexPosition");
+	this.gl.enableVertexAttribArray(this.vertexPositionAttribute);
 };
 FaceCubeManager.prototype.getShader = function(id) {
-	var shaderScript, theSource, currentChild, shader;
+	var shaderScript, theSource, shader;
 	shaderScript = document.getElementById(id);
 	if(!shaderScript) {
 		console.error('Unable to find shader "'+id+'"');
@@ -66,12 +76,38 @@ FaceCubeManager.prototype.getShader = function(id) {
 	this.gl.shaderSource(shader, theSource);
 	//Compile shader program
 	this.gl.compileShader(shader);
-	//Check shader compile sucessful
+	//Check shader compile successful
 	if(!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
 		console.error('An error occurred during shader compilation: '+this.gl.getShaderInfoLog(shader));
 		return null;
 	}
 	return shader;
+};
+FaceCubeManager.prototype.drawScene = function() {
+	this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+	this.perspectiveMatrix = makePerspective(45, 640.0/480.0, 0.1, 100.0);
+	loadIdentity();
+	mvTranslate([-0.0, 0.0, -6.0]);
+	this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.test_square.squareVerticesBuffer);
+	this.gl.vertexAttribPointer(this.vertexPositionAttribute, 3, this.gl.FLOAT, false, 0, 0);
+	setMatrixUniforms(this.gl, this.perspectiveMatrix, this.shaderProgram);
+	this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+};
+
+function TestSquare(gl) {
+	this.gl = gl;
+	this.initBuffers();
+}
+TestSquare.prototype.initBuffers = function() {
+	this.squareVerticesBuffer = this.gl.createBuffer();
+	this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.squareVerticesBuffer);
+	var vertices = [
+		1.0,  1.0,  0.0,
+		-1.0, 1.0,  0.0,
+		1.0,  -1.0, 0.0,
+		-1.0, -1.0, 0.0
+	];
+	this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
 };
 
 function FaceCube() {
